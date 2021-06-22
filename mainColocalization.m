@@ -1,9 +1,28 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Version of June 21st 2021                                               %
+% Authored by Boris Louis,Raffaele Vitale, Susana Rocha and Aline Acke.   %
+%                                                                         %
+%                                                                         %
+%                                                                         % 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear
 clc
 close all
+%% User input
+%Input single-molecule detection
+locROI = 20; %radius in pixel
+chi2 = 70; %certainty threshold for initial detection (500)
+FWHM = 4; %full width half maximum of the PSF
+
+%Input for simulation to check p-value
+nsim=1e4; %number of simulation to be ran
+
+% filename for saving data (excel format)
+filename = ' post covid test BRD4 acetylation cell 50 rotation 180.xlsx'; 
 
 %% Data loading DAPI
-%open UI to search file
+%open UI to search file, only search file that contain DAPI and are .tif
+%files
 [fileName,folder,~] = uigetfile('*DAPI*.tif','Pick a tif file to analyze');
 cd(folder)
 fullPath = [folder filesep fileName]; 
@@ -15,7 +34,7 @@ assert(strcmp(ext,'.tif'),'The file picked is not a tif file');
 %get the info of the file
 [fileInfo] = Load.Movie.tif.getinfo(fullPath);
 
-%get the total number of frame in the file
+%get the total number of frame in the file and load them
 frames = 1:fileInfo.Frame_n;
 nFrames = length(frames);
 IM_DAPI = Load.Movie.tif.getframes(fullPath,frames);
@@ -23,7 +42,7 @@ IM_DAPI = Load.Movie.tif.getframes(fullPath,frames);
 %% Segment nucleus (only based on intensity, can be optimized)
 % get threshold with help of user
 fr = round(nFrames/2); %use frame on the middle of the stack
-currentFrame = IM_DAPI(:,:,fr);
+currentFrame = IM_DAPI(:,:,fr);% frame changed to nr 1, change back 1->fr
 
 [tHold] = expMic.getTh(currentFrame,'Segment Nucleus');
 close(gcf)
@@ -45,12 +64,7 @@ for i = 1:nFrames
 end
 close(h)
 
-
-%% User input
-locROI = 20; %radius in pixel
-chi2 = 500; %certainty threshold for initial detection
-FWHM = 4; %full width half maximum of the PSF
-%% Data loading VIRUS
+%% Data loading PROTEIN
 %open UI to search file
 [fileName,folder,~] = uigetfile('*irus*.tif','Pick a tif file to analyze');
 fullPath = [folder filesep fileName]; 
@@ -78,27 +92,27 @@ for i = 1 : nFrames
     %pos is (y,x) because y is the first dimension in matrices in matlab
     pos = round(pos); %round for ROI
     if ~isempty(pos)
-    SRPos = table(zeros(size(pos, 1), 1), zeros(size(pos, 1), 1), zeros(size(pos, 1), 1), zeros(size(pos, 1), 1),'VariableNames',{'frame','x','y', 'int'});
+        %Pre- allocation
+        SRPos = table(zeros(size(pos, 1), 1), zeros(size(pos, 1), 1), zeros(size(pos, 1), 1), zeros(size(pos, 1), 1),'VariableNames',{'frame','x','y', 'int'});
+        
+        for j = 1:size(pos,1)
+            ROI = currentFrame(pos(j,1)-locROI:pos(j,1)+locROI,pos(j,2)-locROI:pos(j,2)+locROI);
+
+            %Create a grid for fitting
+            [X,Y] = meshgrid(pos(j,2)-locROI:pos(j,2)+locROI,pos(j,1)-locROI:pos(j,1)+locROI);
+            domain(:,:,1) = X;
+            domain(:,:,2) = Y;
     
-    for j = 1:size(pos,1)
-        ROI = currentFrame(pos(j,1)-locROI:pos(j,1)+locROI,pos(j,2)-locROI:pos(j,2)+locROI);
-                
-        
-        [X,Y] = meshgrid(pos(j,2)-locROI:pos(j,2)+locROI,pos(j,1)-locROI:pos(j,1)+locROI);
-        domain(:,:,1) = X;
-        domain(:,:,2) = Y;
-        
-        [gPar] = Localization.Gauss.MultipleFitting(ROI,pos(j,2),pos(j,1),domain,1);%data,x0,y0,domain,nbOfFit
-        
-        SRPos.frame(j) = i;
-        SRPos.x(j) = gPar(5);
-        SRPos.y(j) = gPar(6);
-        SRPos.int(j) = gPar(1);
-        
-        
-    end
+            [gPar] = Localization.Gauss.MultipleFitting(ROI,pos(j,2),pos(j,1),domain,1);%data,x0,y0,domain,nbOfFit
+
+            SRPos.frame(j) = i;
+            SRPos.x(j) = gPar(5);
+            SRPos.y(j) = gPar(6);
+            SRPos.int(j) = gPar(1);
+
+        end
     
-    locPos{i} = SRPos;
+        locPos{i} = SRPos;
     end
     
     waitbar(i/nFrames,h,sprintf('Localizing Frame: %d / %d',i, nFrames));
@@ -112,29 +126,32 @@ imagesc(IM(:,:,i), [0 15000]);
 colormap('jet'); title(['FRAME: ' num2str(i)]);
 hold on
 try
-plot(locPos{i}.x,locPos{i}.y,'wo');
-%end
-pause
+    plot(locPos{i}.x,locPos{i}.y,'wo');
+    %end
+    pause
+catch e
 end
 
 %% eliminate partciles in just one plane + get the brighest plane for each particle
 
 cod = table2array(vertcat(locPos{:})); 
 
-res = H_autotrack4(cod, 3, 0); %connect detected molecules
+res = Misc.H_autotrack4(cod, 5, 0); %connect detected molecules
 
 pt = []; %points to be analysed
 
 for i = 1:max(res(:,4))
     tr = res(res(:,4)==i, :);
-    if size(tr, 1) > 1 % particle is detected in 2 consecutive planes
+    %if size(tr, 1) > 1 % particle is detected in 2 consecutive planes
         [ind, ~]=find(tr==max(tr(:,5)));
         pt = cat(1, pt, tr(ind, :));
-    end
+    %end
 end
+%pt = [cod(:,2:3) cod(:,1) ones(size(cod,1), 1) cod(:,4)];
+pt = sortrows(pt, 5);
+pt = pt(floor(size(pt, 1)*0.1)+1:end, :);
 
 %pt = array2table(pt, 'VariableNames', {'x', 'y', 'frame', 'particleNr', 'int'});
-
 
 %% Data loading - DNA marker
 %open UI to search file
@@ -157,14 +174,10 @@ IM_marker = Load.Movie.tif.getframes(fullPath,frames);
 %selPos = pt;
 selPos = array2table(pt, 'VariableNames', {'x', 'y', 'frame', 'particle', 'intensity'});
 
-%pval = cell2table(cell(0,4), 'VariableNames', {'mean', 'max', 'sum', 'median'});
-
-for i = 1 : length (selPos.frame);
+for i = 1 : length (selPos.frame)
     %fr = selPos(i, 3); %frame where point is the brightest
     fr = selPos.frame(i);
     currentFrame = double(IM_marker(:,:,fr)); %frame where particle is brightest
-    %currentFrame = double(IM(:,:,fr)); %load virus image for control
-    %currentFrame = double(max(IM(:,:,fr), IM_marker(:,:,fr))); %load virus image for control + marker
     
     realVal = getIntensities (currentFrame, selPos(i, {'x', 'y'}), 1); %get descriptors from 3x3 area
     realVal = array2table(realVal, 'VariableNames', {'mean', 'median', 'sum', 'max'});
@@ -172,7 +185,7 @@ for i = 1 : length (selPos.frame);
     % by DAPI
     mask = IM_nuc(:,:, fr); %get DAPI-selected nucleus
     
-    nsim=1e4;
+    
     index  = find(mask);
     select = index(randperm(length(index), nsim));
     [rand(:,2), rand(:,1)] = ind2sub(size(mask), select); %10000 random points inside the DAPI-defined nucleus
@@ -181,90 +194,19 @@ for i = 1 : length (selPos.frame);
     simVal = reshape(cell2mat(simVal), 4, [])';
     simVal = array2table(simVal, 'VariableNames', {'mean', 'median', 'sum', 'max'});
     
-    %calculate pValue for point i
+    %calculate pValue for point i 
     selPos.pval_mean(i) = (sum(realVal.mean<simVal.mean) + 1)/(nsim+1);
     selPos.pval_median(i) = (sum(realVal.median<simVal.median) + 1)/(nsim+1);
     selPos.pval_max(i) = (sum(realVal.max<simVal.max) + 1)/(nsim+1);
     selPos.pval_sum(i) = (sum(realVal.sum<simVal.sum) + 1)/(nsim+1);
+    
+    %save the mean value of the marker intensity
+    selPos.mean_marker(i) = realVal.mean;
+    selPos.median_marker(i) = realVal.median;
+    
 
 end
 
-%% plot the data to evaluate result
-figure
-pause
-for i = 1:length (selPos.frame)
-    fr = selPos.frame(i);
-    %get contour nucleus from DAPI
-    mask = bwboundaries(IM_nuc(:,:, fr));
-    radi = 20;
-    cod = [selPos.x(i) selPos.y(i)];
-    
-    %get image from Virus channel
-    imVirus =  double(IM(:,:,fr));
-    % reduce valus for better visualization
-    imVirus(imVirus > max(imVirus(:))./5) = max(imVirus(:))./5;
-    imVirus = (imVirus-min(imVirus(:)))./(max(max(imVirus-min(imVirus(:))))); %normalize
-    
-    %get image from Marker channel
-    imMarker = double(IM_marker(:,:,fr));
-    % reduce valus for better visualization
-    imMarker(imMarker > max(imMarker(:))./3) = max(imMarker(:))./3;
-    imMarker = (imMarker-min(imMarker(:)))./(max(max(imMarker-min(imMarker(:))))); %normalize
-    %imMarker = H_norimage(imMarker);
-    
-    
-    %plot virus image alone - red
-    im = zeros([size(imVirus) 3]);
-    im(:,:,2) = imVirus;
-    subplot(2,3,1); 
-    image(im); axis equal tight
-    hold on
-    for j = 1:length(mask)
-        plot(mask{j}(:,2), mask{j}(:,1), 'c', 'Linewidth', 2);
-    end
-    hold off
-    title('Virus')
-    
-    subplot(2,3,4); 
-    image(im); axis([cod(1)-radi cod(1)+radi cod(2)-radi cod(2)+radi])
-    title(num2str(selPos.particle(i)))
-    
-    %plot virus image alone - red
-    im = zeros([size(imVirus) 3]);
-    im(:,:,1) = imMarker;
-    subplot(2,3,2); 
-    image(im); axis equal tight
-    hold on
-    for j = 1:length(mask)
-        plot(mask{j}(:,2), mask{j}(:,1), 'c', 'Linewidth', 2);
-    end
-    hold off
-    title('DNA marker')
-    
-    subplot(2,3,5); 
-    image(im); axis([cod(1)-radi cod(1)+radi cod(2)-radi cod(2)+radi])
-    
-    %plot overlay
-    im = zeros([size(imVirus) 3]);
-    im(:,:,1) = imMarker;
-    im(:,:,2) = imVirus;
-    subplot(2,3,6); 
-    image(im); axis([cod(1)-radi cod(1)+radi cod(2)-radi cod(2)+radi])
-    title(num2str(selPos.pval_mean(i)))
-    
-    %plot DAPI
-    imDAPI =  double(IM_DAPI(:,:,fr));
-    subplot(2,3,3);
-    imagesc(imDAPI);axis equal tight
-    colormap gray
-    hold on
-    for j = 1:length(mask)
-        plot(mask{j}(:,2), mask{j}(:,1), 'c', 'Linewidth', 2);
-    end
-    hold off
-    title('DAPI')
-    
-    pause
-    
-end
-    close(gcf)
+%% get the Excell file of the p-value
+T = selPos; 
+writetable(T,filename,'Sheet',1,'Range','A1')
