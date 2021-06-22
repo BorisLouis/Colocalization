@@ -35,7 +35,7 @@ distribution of the DNA marker is rather inhomogeneous we could expect that rand
 allows us to check this and estimate the p-value for our colocalization. A p-value <0.05, in this case would mean that the match we have
 between the protein localised and the DNA marker is not random.
 
-# mainPCC.m
+# MainPCC.m
 The mainPCC.m performs a very similar analysis but instead of comparing intensity and localized spot, performs a correlation between the protein channel
 and the DNA marker channel, a high correlation would indicate that most of the bright protein spot are placed in very close proximity to the bright spots
 on the DNA marker channel.
