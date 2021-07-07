@@ -66,7 +66,7 @@ close(h)
 
 %% Data loading PROTEIN
 %open UI to search file
-[fileName,folder,~] = uigetfile('*irus*.tif','Pick a tif file to analyze');
+[fileName,folder,~] = uigetfile('*.tif','Pick a protein tif file to analyze');
 fullPath = [folder filesep fileName]; 
 [~,~,ext] = fileparts(fullPath);
 
@@ -155,7 +155,7 @@ pt = pt(floor(size(pt, 1)*0.1)+1:end, :);
 
 %% Data loading - DNA marker
 %open UI to search file
-[fileName,folder,~] = uigetfile('*arker*.tif','Pick a tif file to analyze');
+[fileName,folder,~] = uigetfile('*.tif','Pick a tif file to analyze');
 fullPath = [folder filesep fileName]; 
 [~,~,ext] = fileparts(fullPath);
 
