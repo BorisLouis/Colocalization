@@ -25,7 +25,7 @@ BWpre = ~BWpre;
 Blength = cellfun(@length,B);
 
 % cells must be the largest of them
-[~, idx] = maxk2(Blength,nr);
+[~, idx] = maxk(Blength,nr);
 B = B(idx);
 
 %smooth
