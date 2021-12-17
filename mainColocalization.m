@@ -14,6 +14,9 @@ locROI = 70; %radius in pixel
 chi2 = 100; %certainty threshold for initial detection (500)
 FWHM = 4; %full width half maximum of the PSF
 
+% px size
+pxSize = 200; %in nm
+
 %Input for simulation to check p-value
 nsim=1e4; %number of simulation to be ran
 
@@ -240,6 +243,12 @@ if ~isempty(imNuc)
                 
     end    
 end
+
+%% Convert position and distances from pixels to um
+
+selPos.dist2Center = selPos.dist2Center*pxSize/1000;
+selPos.dist2Membrane = selPos.dist2Membrane*pxSize/1000;
+
 
 %% get the Excell file of the p-value
 T = selPos; 
