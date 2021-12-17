@@ -85,7 +85,6 @@ if ~isempty(nucleusIm)
         waitbar(i/nFrames, h);
         if i == 1
             imagesc(imNuc(:,:,1))
-            pause
         end
     end
     close(h)
@@ -145,12 +144,9 @@ i=1;%for checking 1 frame only
 imagesc(imParticle(:,:,i), [0 15000]);
 colormap('jet'); title(['FRAME: ' num2str(i)]);
 hold on
-try
-    plot(locPos{i}.x,locPos{i}.y,'wo');
-    %end
-    pause
-catch e
-end
+plot(locPos{i}.x,locPos{i}.y,'wo');
+
+
 
 %% eliminate partciles in just one plane + get the brighest plane for each particle
 
