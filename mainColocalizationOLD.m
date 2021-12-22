@@ -31,36 +31,52 @@ filename = ' post covid test BRD4 acetylation cell 50 rotation 180.xlsx';
 % 2) Particles (mandatory), should contain particle in the filename
 % 3) epigenetic marker (mandatory) should contain epigeneticMarker in the
 % filename
+[fileName,folder,~] = uigetfile('*DAPI*.tif','Pick a tif file to analyze');
 
-[folder] = uigetdir();
-%get list of files in selected directory
-file2Analyze = dir(folder);
+fullPath = [folder filesep fileName]; 
+[~,~,ext] = fileparts(fullPath);
 
-%keep only files (remove directories from the list)
-file2Analyze([file2Analyze.isdir]) = [];
+%check the extension is correct
+assert(strcmp(ext,'.tif'),'The file picked is not a tif file');
 
-%keep only compatible files
-idx = contains({file2Analyze.name},'.tif','IgnoreCase',true);
+%get the info of the file
+[fileInfo] = Load.Movie.tif.getinfo(fullPath);
 
-file2Analyze = file2Analyze(idx);
+%get the total number of frame in the file
+frames = 1:fileInfo.Frame_n;
 
-%check that we have some files left before we continue
-assert(~isempty(file2Analyze),'Could not find compatible files in the given directory, please check the filenames and extensions');
-
-% Data loading Nucleus Staining
-
-nucleusIm = Load.Data(file2Analyze,'nucleusStain');
+nucleusIm = Load.Movie.tif.getframes(fullPath,frames);
 
 % Data loading Particles
-imParticle = Load.Data(file2Analyze,'particle');
-nFrames = size(imParticle,3); 
-% check that we found some particle data otherwise throw an error 
-assert(~isempty(imParticle),'Could not find particle file with .tif extension, please check the selected directory');
+[fileName,folder,~] = uigetfile('*irus*.tif','Pick a tif file to analyze');
+fullPath = [folder filesep fileName]; 
+[~,~,ext] = fileparts(fullPath);
+
+%check the extension is correct
+assert(strcmp(ext,'.tif'),'The file picked is not a tif file');
+
+%get the info of the file
+[fileInfo] = Load.Movie.tif.getinfo(fullPath);
+
+%get the total number of frame in the file
+frames = 1:fileInfo.Frame_n;
+imParticle = Load.Movie.tif.getframes(fullPath,frames);
     
 % Data loading - DNA marker
 
-imMarker = Load.Data(file2Analyze,'epigeneticMarker');
-assert(~isempty(imMarker),'Could not find epigeneticMarker file with .tif extension, please check the selected directory');
+[fileName,folder,~] = uigetfile('*arker*.tif','Pick a tif file to analyze');
+fullPath = [folder filesep fileName]; 
+[~,~,ext] = fileparts(fullPath);
+
+%check the extension is correct
+assert(strcmp(ext,'.tif'),'The file picked is not a tif file');
+
+%get the info of the file
+[fileInfo] = Load.Movie.tif.getinfo(fullPath);
+
+%get the total number of frame in the file
+frames = 1:fileInfo.Frame_n;
+imMarker = Load.Movie.tif.getframes(fullPath,frames);
 
 
 %% Segment nucleus (only based on intensity, can be optimized)
