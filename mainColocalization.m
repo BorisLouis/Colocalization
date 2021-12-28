@@ -59,7 +59,7 @@ assert(~isempty(imParticle),'Could not find particle file with .tif extension, p
     
 % Data loading - DNA marker
 
-imMarker = Load.Data(file2Analyze,'epigeneticMarker');
+imMarker = Load.Data(file2Analyze,'marker');
 assert(~isempty(imMarker),'Could not find epigeneticMarker file with .tif extension, please check the selected directory');
 
 
@@ -100,7 +100,7 @@ locPos = cell(nFrames,1);
 % is the segmentation is empty then we replace it by a matrix of ones so
 % multiplication by it will not do anything.
 if isempty(imNuc)
-    imNuc = ones(size(imParticle));
+    imNuc = ones(size(imParticle),'like',imParticle);
 end
 h = waitbar(0,'Localizing ...');
 for i = 1 : nFrames
