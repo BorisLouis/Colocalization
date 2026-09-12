@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite both the repository
+  using its Zenodo DOI and the associated paper listed below.
+type: software
+title: "Colocalization"
+authors:
+  - family-names: "Louis"
+    given-names: "Boris"
+repository-code: "https://github.com/BorisLouis/Colocalization"
+
+# Uncomment and fill these when available:
+# version: "1.0.0"
+# date-released: "YYYY-MM-DD"
+# doi: "YOUR ZENODO DOI"
+
+references:
+  - type: article
+    title: >-
+      Expansion microscopy allows high resolution single
+      cell analysis of epigenetic readers
+    authors:
+      - family-names: "Acke"
+        given-names: "Aline"
+      - family-names: "Van Belle"
+        given-names: "Siska"
+      - family-names: "Louis"
+        given-names: "Boris"
+      - family-names: "Vitale"
+        given-names: "Raffaele"
+      - family-names: "Rocha"
+        given-names: "Susana"
+      - family-names: "Voet"
+        given-names: "Thierry"
+      - family-names: "Debyser"
+        given-names: "Zeger"
+      - family-names: "Hofkens"
+        given-names: "Johan"
+    journal: "Nucleic Acids Research"
+    volume: "50"
+    issue: "17"
+    article-number: "e100"
+    year: 2022
+    doi: "10.1093/nar/gkac521"
